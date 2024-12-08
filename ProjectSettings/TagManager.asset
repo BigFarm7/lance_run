@@ -12,6 +12,8 @@ TagManager:
   - Detect
   - Ill
   - Bigcol
+  - Basic
+  - R
   layers:
   - Default
   - TransparentFX
@@ -19,7 +21,7 @@ TagManager:
   - IgnoreLayer
   - Water
   - UI
-  - 
+  - Object3D
   - 
   - 
   - 

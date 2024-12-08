@@ -396,6 +396,15 @@ public class PlayerController : MonoBehaviour
       
     }
     
+    public void TimeStop()
+    {
+        Time.timeScale = 0.0f;
+    }
+
+    public void TimeGo()
+    {
+        Time.timeScale = 1.0f;
+    }
     IEnumerator Stable()
     {
         yield return new WaitForSeconds(1);
@@ -478,6 +487,7 @@ public class PlayerController : MonoBehaviour
             RagdollOn();
             isLive = false;
             rb.automaticCenterOfMass = true;
+            _carManager.Die();
         }
     }
 }

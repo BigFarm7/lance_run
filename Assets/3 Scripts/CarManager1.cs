@@ -1,5 +1,4 @@
-﻿
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
@@ -7,16 +6,21 @@ using UnityEngine.XR.ARSubsystems;
 using UnityEngine.EventSystems;
 using TMPro;
 using Unity.Collections;
+using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
-
+using DG.Tweening;
 public class CarManager : MonoBehaviour
 {
+    public MenuSettingsUI menuset;
+    public GameObject PauseButton;
+    public GameObject PausePanel;
+    public GameObject Menu;
     public GameObject indicator;
-    public GameObject myCar;
+    public GameObject[] myCar;
     public GameObject Roads;
     public GameObject mask3D;
     public GameObject _obj;
-    public GameObject hologram;
+    public GameObject[] hologram;
     public GameObject joystic;
     public Vector3 directionAwayFromCamera,forwardVec;
     public Transform myCarPos;
@@ -30,14 +34,13 @@ public class CarManager : MonoBehaviour
     NativeArray<Vector2> boundary;
     Vector3 worldPoint, _objPos, newPos;
     public Quaternion instantRot;
-    
-
     List<Vector3> boundaryList;
 
-    public bool isLock = false, isLine = false, CoolTime;
+    public bool isLock = false, isLine = false, CoolTime, canClick = false;
 
+    public TextMeshProUGUI informText;
 
-    public TextMeshProUGUI informText;// confirmText;
+    int selectNumber = 0;
     void Start()
     {
         // 인디케이터를 비활성화한다.
@@ -54,26 +57,33 @@ public class CarManager : MonoBehaviour
 
     void Update()
     {
-        // 바닥 감지 및 이미지 출력 함수
-        DetectGround();
-        
+        if (!EventSystem.current.enabled)
+            return;
+
+        if (!canClick)
+            return;
+       
 
         if (EventSystem.current.currentSelectedGameObject)
         {
             return;
         }
 
+
+        DetectGround();
+
+
         // 인디케이터가 활성화된 상태에서 입력을 처리한다.
         if (indicator.activeInHierarchy)
         {
-            hologram.SetActive(true);
+            hologram[selectNumber].SetActive(true);
 
             Quaternion rota = instantRot * Quaternion.Euler(2, 90, 0);
             Vector3 direction = instantRot * Quaternion.Euler(0, 90, 0) *Vector3.forward;
             newPos = _objPos + direction * 0.1f;
 
-            hologram.transform.position = newPos;
-            hologram.transform.rotation = rota;
+            hologram[selectNumber].transform.position = newPos;
+            hologram[selectNumber].transform.rotation = rota;
 
 
           
@@ -86,7 +96,7 @@ public class CarManager : MonoBehaviour
                 if (placedObject == null)
                 {
                     GameObject gameObjectS = GameObject.FindGameObjectWithTag("Scooter");
-                    GameObject[] gameObjectR = GameObject.FindGameObjectsWithTag("Road");
+                    GameObject[] gameObjectR = GameObject.FindGameObjectsWithTag("Basic");
                     GameObject[] gameObjectM = GameObject.FindGameObjectsWithTag("Mask");
                     Destroy(gameObjectS);
 
@@ -106,7 +116,7 @@ public class CarManager : MonoBehaviour
 
                     forwardVec = instantRot * Vector3.forward;
 
-                    Instantiate(myCar, newPos - new Vector3(0, 0.01f, 0), instantRot);
+                    Instantiate(myCar[selectNumber], newPos - new Vector3(0, 0.01f, 0), instantRot);
                     Instantiate(Roads, newPos - new Vector3(0, 0.01f, 0), instantRot);
                     Instantiate(mask3D, newPos - new Vector3(0, 0.01f, 0), instantRot);
 
@@ -116,9 +126,12 @@ public class CarManager : MonoBehaviour
                     indicator.SetActive(false);
                     informText.gameObject.SetActive(false);
                     
-                    hologram.SetActive(false);
+                    hologram[selectNumber].SetActive(false);
 
                     joystic.gameObject.SetActive(true);
+
+                    if(menuset.IsMusicEnabled)
+                        AudioManager.instance.PlayBgm2(true);
                 }
                 else
                 {
@@ -234,9 +247,6 @@ public class CarManager : MonoBehaviour
     private bool IsPositionOnLine(Vector3 position, float tolerance = 0.1f)
     {
 
-     
-
-
         for (int i = 0; i < boundaryList.Count; i++)
         {
 
@@ -312,7 +322,173 @@ public class CarManager : MonoBehaviour
             return lineStart + projection * lineDirection;
         }
     }
+    public void UnActive()
+    {
+        Invoke("UnAct", 0.5f);
+    }
 
+    void UnAct()
+    {
+        Menu.SetActive(false);
+        PauseButton.SetActive(true);
+        canClick = true;
+    }
+    public void SelectNum(int num)
+    {
+        selectNumber = num;
+    }
+
+    public void Pause()
+    {
+        PausePanel.SetActive(true);
+        if (isLock == true)
+        {
+            PlayerController playercon = GameObject.FindGameObjectWithTag("Scooter").GetComponent<PlayerController>();
+
+            playercon.TimeStop();
+        }
+        canClick = false;
+    }
+
+    public void UnPause()
+    {
+        PausePanel.GetComponent<CanvasGroup>().alpha = 0.0f;
+        PausePanel.SetActive(false);
+        if (isLock == true)
+        {
+            PlayerController playercon = GameObject.FindGameObjectWithTag("Scooter").GetComponent<PlayerController>();
+            playercon.TimeGo();
+        }
+        canClick = true;
+    }
+    public void WaitMenu()
+    {
+        Time.timeScale = 1.0f;
+        PauseButton.SetActive(false);
+        PausePanel.SetActive(false);
+        Clear();
+        if (menuset.IsMusicEnabled)
+        {
+            AudioManager.instance.bgmPlayers[1].DOFade(0, 0.5f).OnKill(() =>
+            {
+                AudioManager.instance.bgmPlayers[1].Stop();
+                AudioManager.instance.bgmPlayers[1].volume = 0.75f;
+                AudioManager.instance.bgmPlayers[0].volume = 0.75f;
+            });
+        }
+        Invoke("GoMenu", 0.5f);
+
+       
+
+    }
+
+    void GoMenu()
+    {
+        Menu.SetActive(true);
+        hologram[selectNumber].SetActive(false);
+        canClick = false;
+        informText.gameObject.SetActive(true);
+        if (menuset.IsMusicEnabled)
+            AudioManager.instance.bgmPlayers[0].Play();
+    }
+
+    public void Die()
+    {
+      
+        PauseButton.SetActive(false);
+
+        Invoke("DDie", 2f);
+        
+    }
+    public void DDie()
+    {
+       
+        GameObject gameObjectS = GameObject.FindGameObjectWithTag("Scooter");
+        GameObject[] gameObjectR = GameObject.FindGameObjectsWithTag("Basic");
+        GameObject[] gameObjectR1 = GameObject.FindGameObjectsWithTag("R");
+        GameObject[] gameObjectR2 = GameObject.FindGameObjectsWithTag("Ill");
+        GameObject[] gameObjectM = GameObject.FindGameObjectsWithTag("Mask");
+        GameObject Ragdoll = GameObject.Find("RagDoll");
+        Destroy(Ragdoll);
+        joystic.gameObject.SetActive(false);
+
+      // Debug.Log(Ragdoll);
+       
+        Destroy(gameObjectS);
+
+        for (int index = 0; index < gameObjectR.Length; index++)
+        {
+            Destroy(gameObjectR[index]);
+        }
+
+        for (int index = 0; index < gameObjectM.Length; index++)
+        {
+            Destroy(gameObjectM[index]);
+        }
+        for (int index = 0; index < gameObjectR1.Length; index++)
+        {
+            Destroy(gameObjectR1[index]);
+        }
+        for (int index = 0; index < gameObjectR2.Length; index++)
+        {
+            Destroy(gameObjectR2[index]);
+        }
+        Cam_Offset = GameObject.Find("Camera Offset").transform;
+        Cam_Offset.transform.position = Vector3.zero;
+
+        isLock = false;
+        instantRot = Quaternion.identity;
+
+        Transition transition = GameObject.Find("Transition Canvas").GetComponent<Transition>();
+        hologram[selectNumber].SetActive(false);
+        transition.Close();
+
+        if (menuset.IsMusicEnabled)
+        {
+            AudioManager.instance.bgmPlayers[1].DOFade(0, 0.5f).OnKill(() =>
+            {
+                AudioManager.instance.bgmPlayers[1].Stop();
+                AudioManager.instance.bgmPlayers[1].volume = 0.75f;
+                AudioManager.instance.bgmPlayers[0].volume = 0.75f;
+
+            });
+        }
+        Invoke("GoMenu", 0.5f);
+    }
+    public void Clear()
+    {
+        GameObject gameObjectS = GameObject.FindGameObjectWithTag("Scooter");
+        GameObject[] gameObjectR = GameObject.FindGameObjectsWithTag("Basic");
+        GameObject[] gameObjectR1 = GameObject.FindGameObjectsWithTag("R");
+        GameObject[] gameObjectR2 = GameObject.FindGameObjectsWithTag("Ill");
+        GameObject[] gameObjectM = GameObject.FindGameObjectsWithTag("Mask");
+        joystic.gameObject.SetActive(false);
+        Destroy(gameObjectS);
+
+        for (int index = 0; index < gameObjectR.Length; index++)
+        {
+            Destroy(gameObjectR[index]);
+        }
+
+        for (int index = 0; index < gameObjectM.Length; index++)
+        {
+            Destroy(gameObjectM[index]);
+        }
+        for (int index = 0; index < gameObjectR1.Length; index++)
+        {
+            Destroy(gameObjectR1[index]);
+        }
+        for (int index = 0; index < gameObjectR2.Length; index++)
+        {
+            Destroy(gameObjectR2[index]);
+        }
+        Cam_Offset = GameObject.Find("Camera Offset").transform;
+        Cam_Offset.transform.position = Vector3.zero;
+
+        isLock = false;
+        instantRot = Quaternion.identity;
+       // hologram[selectNumber].gameObject.SetActive(true);
+    }
     IEnumerator RunCool()
     {
         yield return new WaitForSeconds(0.5f);

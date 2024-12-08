@@ -365,7 +365,7 @@ GameObject:
   - component: {fileID: 2341892446515109905}
   m_Layer: 0
   m_Name: Curve Road2
-  m_TagString: Untagged
+  m_TagString: R
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

@@ -13,6 +13,8 @@ public class RecreateRoad : MonoBehaviour
     public GameObject thirdRoad;
     public CarManager carManager;
     public Vector3 angle;
+
+    
     private void OnTriggerEnter(Collider other)
     {
         if(other.tag =="Road")
