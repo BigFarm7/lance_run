@@ -22,7 +22,7 @@ public class AudioManager : MonoBehaviour
     {
         instance = this;
         Init();
-        
+
     }
 
     void Init()
@@ -58,13 +58,14 @@ public class AudioManager : MonoBehaviour
             bgmPlayers[0].Stop();
         });
     }
-   
+
 
     public void PlayBgm1(bool isPlay)
     {
-       
-       
-        if (isPlay) {
+
+
+        if (isPlay)
+        {
             bgmPlayers[0].volume = 0.75f;
             bgmPlayers[0].Play();
         }
@@ -72,6 +73,20 @@ public class AudioManager : MonoBehaviour
         {
             bgmPlayers[0].Stop();
         }
+    }
+    public void playB2()
+    {
+        Invoke("PlayBg2", 1f);
+    }
+
+    public void CancleB2()
+    {
+        CancelInvoke("PlayBg2");
+    }
+
+    void PlayBg2()
+    {
+        PlayBgm2(true);
     }
 
     public void PlayBgm2(bool isPlay)
@@ -88,7 +103,8 @@ public class AudioManager : MonoBehaviour
     }
     public void PlaySfx(int i)
     {
-        for (int index = 0; index < sfxPlayers.Length; index++) {
+        for (int index = 0; index < sfxPlayers.Length; index++)
+        {
             int loopIndex = (index + channelIndex) % sfxPlayers.Length;
 
             if (sfxPlayers[loopIndex].isPlaying)
@@ -102,6 +118,6 @@ public class AudioManager : MonoBehaviour
 
         }
 
-       
+
     }
 }

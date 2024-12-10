@@ -11,6 +11,9 @@ using UnityEngine.InputSystem;
 using DG.Tweening;
 public class CarManager : MonoBehaviour
 {
+    public GameObject ScoreText;
+    public GameObject flipText;
+    public GameObject plusText;
     public MenuSettingsUI menuset;
     public GameObject PauseButton;
     public GameObject PausePanel;
@@ -22,10 +25,11 @@ public class CarManager : MonoBehaviour
     public GameObject _obj;
     public GameObject[] hologram;
     public GameObject joystic;
-    public Vector3 directionAwayFromCamera,forwardVec;
+    public GameObject JumpButton;
+    public Vector3 directionAwayFromCamera, forwardVec;
     public Transform myCarPos;
 
-    public Transform Cam_Offset,MainCam;
+    public Transform Cam_Offset, MainCam;
     public float relocateDistance = 1.0f;
 
     ARRaycastManager arManager;
@@ -35,12 +39,18 @@ public class CarManager : MonoBehaviour
     Vector3 worldPoint, _objPos, newPos;
     public Quaternion instantRot;
     List<Vector3> boundaryList;
-
+    public Vector3 direction;
     public bool isLock = false, isLine = false, CoolTime, canClick = false;
 
     public TextMeshProUGUI informText;
 
     int selectNumber = 0;
+
+    private void Awake()
+    {
+        //Application.targetFrameRate = 60;
+
+    }
     void Start()
     {
         // 인디케이터를 비활성화한다.
@@ -51,18 +61,19 @@ public class CarManager : MonoBehaviour
 
         boundaryList = new List<Vector3>();
 
-       
-        
+
+
     }
 
     void Update()
     {
+        //System.GC.Collect();
         if (!EventSystem.current.enabled)
             return;
 
         if (!canClick)
             return;
-       
+
 
         if (EventSystem.current.currentSelectedGameObject)
         {
@@ -76,17 +87,18 @@ public class CarManager : MonoBehaviour
         // 인디케이터가 활성화된 상태에서 입력을 처리한다.
         if (indicator.activeInHierarchy)
         {
+
             hologram[selectNumber].SetActive(true);
 
             Quaternion rota = instantRot * Quaternion.Euler(2, 90, 0);
-            Vector3 direction = instantRot * Quaternion.Euler(0, 90, 0) *Vector3.forward;
+            direction = instantRot * Quaternion.Euler(0, 90, 0) * Vector3.forward;
             newPos = _objPos + direction * 0.1f;
 
             hologram[selectNumber].transform.position = newPos;
             hologram[selectNumber].transform.rotation = rota;
 
 
-          
+
             informText.text = "오브젝트 설치할 곳을 지정하세요.";
             if (Input.GetMouseButtonDown(0) && isLock == false) // 마우스 왼쪽 버튼 클릭
 
@@ -100,11 +112,11 @@ public class CarManager : MonoBehaviour
                     GameObject[] gameObjectM = GameObject.FindGameObjectsWithTag("Mask");
                     Destroy(gameObjectS);
 
-                    for(int index = 0;index < gameObjectR.Length;index++)
+                    for (int index = 0; index < gameObjectR.Length; index++)
                     {
                         Destroy(gameObjectR[index]);
                     }
-                     
+
                     for (int index = 0; index < gameObjectM.Length; index++)
                     {
                         Destroy(gameObjectM[index]);
@@ -125,13 +137,19 @@ public class CarManager : MonoBehaviour
                     isLock = true;
                     indicator.SetActive(false);
                     informText.gameObject.SetActive(false);
-                    
+
                     hologram[selectNumber].SetActive(false);
 
                     joystic.gameObject.SetActive(true);
+                    JumpButton.SetActive(true);
 
-                    if(menuset.IsMusicEnabled)
-                        AudioManager.instance.PlayBgm2(true);
+                    ScoreText.SetActive(true);
+                    SpawnObjects.i = 0;
+
+                    AudioManager.instance.PlaySfx(3);
+                    AudioManager.instance.PlaySfx(4);
+                    if (menuset.IsMusicEnabled)
+                        AudioManager.instance.playB2();
                 }
                 else
                 {
@@ -206,14 +224,14 @@ public class CarManager : MonoBehaviour
                     // ARPlane의 boundary를 가져옴
 
                     NativeArray<Vector2> boundary = _ARPlane.boundary;
-                 
+
                     // 꼭짓점을 월드 좌표로 변환하여 출력
                     for (int i = 0; i < boundary.Length; i++)
                     {
-                        
+
                         Vector2 localPoint = boundary[i];
                         worldPoint = _ARPlane.transform.TransformPoint(new Vector3(localPoint.x, 0, localPoint.y));
-                       // Debug.Log("Vertex " + i + ": " + worldPoint);
+                        // Debug.Log("Vertex " + i + ": " + worldPoint);
 
                         boundaryList.Add(worldPoint);
 
@@ -223,9 +241,9 @@ public class CarManager : MonoBehaviour
 
                 }
 
-                if(IsPositionOnLine(indicator.transform.position))
+                if (IsPositionOnLine(indicator.transform.position))
                 {
-                    
+
                     isLine = true;
                 }
                 else
@@ -233,12 +251,12 @@ public class CarManager : MonoBehaviour
                     isLine = false;
                 }
 
-                return; 
+                return;
             }
         }
         else
         {
-           
+
             informText.text = "주위를 둘러 공간을 확보하세요.";
             indicator.SetActive(false);
         }
@@ -279,7 +297,7 @@ public class CarManager : MonoBehaviour
         float projection = Vector3.Dot(toPoint, lineDirection);
         if (projection < 0 || projection > lineLength)
         {
-            return false; 
+            return false;
         }
 
 
@@ -315,7 +333,7 @@ public class CarManager : MonoBehaviour
         }
         else if (projection > 1)
         {
-            return lineEnd;  
+            return lineEnd;
         }
         else
         {
@@ -378,7 +396,7 @@ public class CarManager : MonoBehaviour
         }
         Invoke("GoMenu", 0.5f);
 
-       
+
 
     }
 
@@ -394,15 +412,20 @@ public class CarManager : MonoBehaviour
 
     public void Die()
     {
-      
+
         PauseButton.SetActive(false);
+        if (menuset.IsSoundsEnabled)
+        {
+            AudioManager.instance.PlaySfx(0);
+            AudioManager.instance.PlaySfx(1);
+        }
 
         Invoke("DDie", 2f);
-        
+        ScoreText.GetComponent<DotweenPer>().Up();
     }
     public void DDie()
     {
-       
+
         GameObject gameObjectS = GameObject.FindGameObjectWithTag("Scooter");
         GameObject[] gameObjectR = GameObject.FindGameObjectsWithTag("Basic");
         GameObject[] gameObjectR1 = GameObject.FindGameObjectsWithTag("R");
@@ -411,9 +434,10 @@ public class CarManager : MonoBehaviour
         GameObject Ragdoll = GameObject.Find("RagDoll");
         Destroy(Ragdoll);
         joystic.gameObject.SetActive(false);
+        JumpButton.SetActive(false);
 
-      // Debug.Log(Ragdoll);
-       
+        // Debug.Log(Ragdoll);
+
         Destroy(gameObjectS);
 
         for (int index = 0; index < gameObjectR.Length; index++)
@@ -463,6 +487,7 @@ public class CarManager : MonoBehaviour
         GameObject[] gameObjectR2 = GameObject.FindGameObjectsWithTag("Ill");
         GameObject[] gameObjectM = GameObject.FindGameObjectsWithTag("Mask");
         joystic.gameObject.SetActive(false);
+        JumpButton.gameObject.SetActive(false);
         Destroy(gameObjectS);
 
         for (int index = 0; index < gameObjectR.Length; index++)
@@ -487,13 +512,20 @@ public class CarManager : MonoBehaviour
 
         isLock = false;
         instantRot = Quaternion.identity;
-       // hologram[selectNumber].gameObject.SetActive(true);
+        // hologram[selectNumber].gameObject.SetActive(true);
     }
     IEnumerator RunCool()
     {
         yield return new WaitForSeconds(0.5f);
 
         CoolTime = false;
+    }
+
+    public void Jumping()
+    {
+        PlayerController playercon = GameObject.FindGameObjectWithTag("Scooter").GetComponent<PlayerController>();
+
+        playercon.GetJump();
     }
     /*
     private void OnDrawGizmos()
@@ -514,4 +546,4 @@ public class CarManager : MonoBehaviour
     }
     */
 }
- 
+

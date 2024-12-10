@@ -16,10 +16,13 @@ public class SpawnObjects : MonoBehaviour
     {
         i++;
 
-        if (i > 8)
+        if (i > 4)
             level = 2;
-        if(i > 15)
+        if (i > 8)
             level = 3;
+        if (i > 12)
+            level = 5;
+
 
         if (transform.gameObject.tag == "Ill")
         {
@@ -60,7 +63,7 @@ public class SpawnObjects : MonoBehaviour
             transform.GetComponent<MeshRenderer>().sharedMaterial = instanceMat;
 
             Color currentColor = instanceMat.color;
-           
+
             currentColor.a = 0f;
 
             DOTween.To(() => currentColor.a, x =>
@@ -69,12 +72,12 @@ public class SpawnObjects : MonoBehaviour
                 instanceMat.color = currentColor;
             }, 1f, 1f);
 
-            
+
             StartCoroutine(MakeRock());
         }
 
 
-        for (int i = 0; i < 5 ; i++)
+        for (int i = 0; i < 5; i++)
         {
             int j = Random.Range(0, 5);
             Instantiate(RockPrefs[j], RockPoints[i].position, Quaternion.identity, transform);
@@ -84,7 +87,7 @@ public class SpawnObjects : MonoBehaviour
 
     {
 
-       
+
 
         yield return new WaitForSeconds(0.75f);
 
@@ -96,7 +99,7 @@ public class SpawnObjects : MonoBehaviour
 
             newObj.transform.DOScale(Vector3.one * 1.75f, 0.75f).SetEase(Ease.OutCubic);
         }
-       
+
 
     }
 }

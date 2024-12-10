@@ -53,6 +53,11 @@ public class AnimatedButton : MonoBehaviour, IPointerClickHandler
         sequence.SetUpdate(independentOfTimeScale);
         sequence.Append(transform.DOScale(new Vector2(0.9f, 0.9f), AnimationDuration / 2).SetEase(Ease));
         sequence.Append(transform.DOScale(Vector2.one, AnimationDuration / 2).SetEase(Ease));
+        MenuSettingsUI menuset = GameObject.Find("Setting UI").GetComponent<MenuSettingsUI>();
+        if (menuset.IsSoundsEnabled)
+        {
+            AudioManager.instance.PlaySfx(2);
+        }
     }
 
     private void UpdateAlpha()

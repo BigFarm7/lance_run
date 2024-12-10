@@ -6,6 +6,6 @@ public class PowerUp : MonoBehaviour
 {
     private void OnCollisionStay(Collision collision)
     {
-        collision.gameObject.GetComponent<Rigidbody>().AddForce(-transform.forward * 50 + transform.up * 10, ForceMode.Impulse);
+        collision.gameObject.GetComponent<Rigidbody>().AddForce(collision.transform.GetComponent<PlayerController>().forwardVec * 50 - transform.up * 50, ForceMode.Impulse);
     }
 }

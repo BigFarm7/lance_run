@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Splines;
 
 public class PlayerController : MonoBehaviour
 {
@@ -40,21 +41,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Transform frontWheeltransform;
     [SerializeField] Transform backWheeltransform;
 
-    public GameObject Ragdoll,Lance;
+    public GameObject Ragdoll, Lance;
 
-    public DetectGround frontGrounded; 
+    public DetectGround frontGrounded;
     public DetectGround rearGrounded;
 
 
-    
+
     float floatInAirTime = 0.0f;
     float JumpChargeTime = 0.0f;
+    float pointTime = 0.0f;
     Vector3 oncef;
 
     Vector3 offset;
     Vector3 eulerAng;
     Transform Cam_Offset;
-    Vector3 forwardVec;
+    public Vector3 forwardVec;
     bool isGrounded = false;
     bool isChecked = false;
     bool isTumbled = false;
@@ -66,8 +68,9 @@ public class PlayerController : MonoBehaviour
     bool isLock = false;
     bool isLive = true;
     bool once = false;
+    bool one = false;
 
-    float PowerX, PowerY, PowerYY;
+    public float PowerX, PowerY, PowerYY;
 
     public float maxTiltAngle;
     public float tumbleForce;
@@ -79,6 +82,7 @@ public class PlayerController : MonoBehaviour
 
     public GameObject ragdollSpine;
     public Transform[] mats;
+    DotweenPer dotweenper;
     void Start()
     {
         _carManager = GameObject.Find("XR Origin").GetComponent<CarManager>();
@@ -89,7 +93,7 @@ public class PlayerController : MonoBehaviour
         rb.centerOfMass = new Vector3(rb.centerOfMass.x, COG.y, rb.centerOfMass.z);
 
         StartCoroutine(FindDetect());
-        
+
         Cam_Offset = GameObject.Find("Camera Offset").transform;
 
         detectingBox = GameObject.FindGameObjectWithTag("Detect").transform;
@@ -98,6 +102,7 @@ public class PlayerController : MonoBehaviour
 
         forwardVec = _carManager.forwardVec;
 
+        dotweenper = GameObject.Find("Point").GetComponent<DotweenPer>();
 
         StartCoroutine(ShaderGen());
 
@@ -122,8 +127,41 @@ public class PlayerController : MonoBehaviour
             UpdateWheels();
             UpdateHandle();
             LayOnTurn();
+            GetPoint();
         }
-       
+
+    }
+
+    void GetPoint()
+    {
+        if (!isStarted)
+            return;
+        if (PowerX >= 330)
+        {
+            dotweenper.fliping(0);
+            PowerX = 0;
+        }
+
+        if (PowerX >= -360 && PowerX <= -330)
+        {
+            dotweenper.fliping(1);
+            PowerX = 0;
+        }
+        pointTime += Time.deltaTime;
+
+        if (pointTime > 1.2f)
+        {
+            pointTime = 0;
+            dotweenper.GetPoint(1);
+        }
+    }
+    public void GetJump()
+    {
+        if (JumpChargeTime > 1.0f)
+        {
+            rb.AddForce(new Vector3(0, 500, 0), ForceMode.Impulse);
+            JumpChargeTime = 0;
+        }
     }
 
     public void GetInput()
@@ -146,15 +184,15 @@ public class PlayerController : MonoBehaviour
             isGrounded = true;
             floatInAirTime = 0.0f;
         }
-           
+
         else
         {
-           
+
             floatInAirTime += Time.deltaTime;
-            if(floatInAirTime >= 0.1f)
+            if (floatInAirTime >= 0.1f)
                 isGrounded = false;
         }
-           
+
 
         if (Input.GetKey(KeyCode.Space) && isGrounded)
         {
@@ -163,14 +201,14 @@ public class PlayerController : MonoBehaviour
                 rb.AddForce(new Vector3(0, 500, 0), ForceMode.Impulse);
                 JumpChargeTime = 0;
             }
-               
+
         }
-        
+
     }
 
     public void HandleEngine()
     {
-        if(!isStarted)
+        if (!isStarted)
             return;
 
         if (angle > maxTiltAngle)
@@ -179,15 +217,15 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            transform.Translate(forwardVec.normalized * 0.002f, Space.World);
-            
+            transform.Translate(forwardVec.normalized * 0.00125f, Space.World);
+
             Vector3 horizonMove = Vector3.Cross(forwardVec.normalized, transform.up);
 
-            
+
             transform.Translate(horizonMove * -horizontalInput * 0.0025f, Space.World);
 
-            if(isStabled)
-             rb.angularVelocity = Vector3.zero;
+            if (isStabled)
+                rb.angularVelocity = Vector3.zero;
         }
 
         if (isBack)
@@ -265,15 +303,15 @@ public class PlayerController : MonoBehaviour
 
                 if (angle > maxTiltAngle)
                 {
-                   
+
                 }
                 else
                 {
                     if (isStabled)
                     {
                         Quaternion currentRotation = transform.rotation;
-                        transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.LookRotation(forwardVec),turnSmoothing);
-                       
+                        transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.LookRotation(forwardVec), turnSmoothing);
+
                     }
                 }
             }
@@ -292,9 +330,9 @@ public class PlayerController : MonoBehaviour
         {
             if (isHorizontalInput)
             {
-               
-                    layingammount = Mathf.LerpAngle(layingammount, 0f, 0.05f);
-                    transform.rotation = Quaternion.Euler(currentRot.x, currentRot.y, layingammount);
+
+                layingammount = Mathf.LerpAngle(layingammount, 0f, 0.05f);
+                transform.rotation = Quaternion.Euler(currentRot.x, currentRot.y, layingammount);
 
                 if (currentSteeringAngle < 0.5f && currentSteeringAngle > -0.5)
                 {
@@ -306,7 +344,7 @@ public class PlayerController : MonoBehaviour
                     //rb.centerOfMass = new Vector3(rb.centerOfMass.x, COG.y, rb.centerOfMass.z);
                 }
 
-               // transform.rotation = Quaternion.Euler(currentRot.x, currentRot.y, layingammount);
+                // transform.rotation = Quaternion.Euler(currentRot.x, currentRot.y, layingammount);
             }
             else
             {
@@ -324,20 +362,20 @@ public class PlayerController : MonoBehaviour
         else
         {
             if (isHorizontalInput || isVerticalInput)
-            {     
-                PowerX -= verticalInput * Time.deltaTime * 200;
-                PowerY += horizontalInput * Time.deltaTime * 200;
+            {
+                PowerX -= verticalInput * Time.deltaTime * 300;
+                PowerY += horizontalInput * Time.deltaTime * 300;
                 PowerYY = PowerY;
                 if (!isChecked)
                 {
-                  
+
                     Quaternion cur = transform.rotation;
                     eulerAng = cur.eulerAngles;
                     isChecked = true;
                 }
-                transform.rotation = Quaternion.Euler(eulerAng.x + PowerX,eulerAng.y + PowerY, transform.rotation.z);
-               
-              
+                transform.rotation = Quaternion.Euler(eulerAng.x + PowerX, eulerAng.y + PowerY, transform.rotation.z);
+
+
             }
         }
     }
@@ -364,8 +402,8 @@ public class PlayerController : MonoBehaviour
     }
     void followCam()
     {
-        Vector3 forvec =  forwardVec;
-        Vector3 objectPosition = transform.position;  
+        Vector3 forvec = forwardVec;
+        Vector3 objectPosition = transform.position;
 
 
         Vector3 projection = Vector3.Project(objectPosition, forvec);
@@ -376,26 +414,27 @@ public class PlayerController : MonoBehaviour
 
         float closestDistance = Vector3.Distance(objectPosition, closestPoint);
 
-        if(!once)
+        if (!once)
         {
             oncef = closestPoint;
             once = true;
         }
-        Cam_Offset.transform.position =  closestPoint - oncef;
-        mask3D.transform.position =new Vector3(transform.position.x, mask3D.transform.position.y, transform.position.z);
+        Cam_Offset.transform.position = closestPoint - oncef;
+        mask3D.transform.position = new Vector3(transform.position.x, mask3D.transform.position.y, transform.position.z);
         detectingBox.position = transform.position - forwardVec.normalized;
     }
 
     void RagdollOn()
     {
-        CopyCharacterTransform(Lance.transform,Ragdoll.transform);
+        CopyCharacterTransform(Lance.transform, Ragdoll.transform);
         Lance.SetActive(false);
-        Ragdoll.SetActive(true);
+
         Ragdoll.transform.SetParent(null);
-        Ragdoll.transform.Translate(0, 0.001f, 0);
-      
+        Ragdoll.transform.Translate(0, 0.01f, 0);
+        Ragdoll.SetActive(true);
+
     }
-    
+
     public void TimeStop()
     {
         Time.timeScale = 0.0f;
@@ -414,7 +453,7 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator GoStart()
     {
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(3f);
 
         isStarted = true;
     }
@@ -422,16 +461,16 @@ public class PlayerController : MonoBehaviour
     {
         for (int i = 0; i < origin.childCount; i++)
         {
-            if(origin.childCount != 0)
+            if (origin.childCount != 0)
             {
-                CopyCharacterTransform(origin.GetChild(i),ragdoll.GetChild(i));
+                CopyCharacterTransform(origin.GetChild(i), ragdoll.GetChild(i));
             }
             ragdoll.GetChild(i).localPosition = origin.GetChild(i).localPosition;
             ragdoll.GetChild(i).localRotation = origin.GetChild(i).localRotation;
         }
 
     }
-   
+
     IEnumerator FindDetect()
     {
         yield return new WaitForSeconds(0.2f);
@@ -445,7 +484,7 @@ public class PlayerController : MonoBehaviour
         float elapsedTime = 0;
 
 
-        
+
         Material[] mat = new Material[6];
 
         for (int i = 0; i < 5; i++)
@@ -454,15 +493,15 @@ public class PlayerController : MonoBehaviour
         }
         mat[5] = mats[5].GetComponent<SkinnedMeshRenderer>().sharedMaterial;
 
-       
 
-        foreach(Material ma in mat)
+
+        foreach (Material ma in mat)
         {
             ma.SetFloat("cut", -5);
         }
 
 
-        while(elapsedTime<75)
+        while (elapsedTime < 75)
         {
             curValue = Mathf.Lerp(curValue, 30, elapsedTime / 50);
             lanceValue = Mathf.Lerp(lanceValue, 3.5f, elapsedTime / 75);
@@ -477,13 +516,16 @@ public class PlayerController : MonoBehaviour
 
             yield return null;
         }
-        
+
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.gameObject.tag == "Obstacle")
+        if (collision.gameObject.tag == "Obstacle")
         {
+            if (one)
+                return;
+            one = true;
             RagdollOn();
             isLive = false;
             rb.automaticCenterOfMass = true;

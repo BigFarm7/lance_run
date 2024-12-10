@@ -14,5 +14,6 @@ public class SelectButton : MonoBehaviour
         }
         transform.GetChild(0).gameObject.SetActive(true);
         Debug.Log(transform.GetChild(0));
+        AudioManager.instance.PlaySfx(2);
     }
 }
